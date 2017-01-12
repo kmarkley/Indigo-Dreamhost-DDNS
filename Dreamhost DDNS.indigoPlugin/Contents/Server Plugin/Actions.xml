@@ -16,14 +16,14 @@
     		</Field>
     		<Field id='sourceDevice' type='menu'  visibleBindingId='sourceType'  visibleBindingValue='device' alwaysUseInDialogHeightCalc='true'>
     		    <Label>Device:</Label>
-				<List class="indigo.devices" dynamicReload="true"/>
+				<List class="indigo.devices"/>
 				<CallbackMethod>formFieldChanged</CallbackMethod>
 			</Field>
     		<Field id='sourceState' type='menu'  visibleBindingId='sourceType'  visibleBindingValue='device' alwaysUseInDialogHeightCalc='true'>
     		    <Label>State:</Label>
-				<List class="self" filter="sourceDevice" method="getStateList" dynamicReload="true"/>
+				<List class="self" method="getStateList" dynamicReload="true"/>
 			</Field>
-    		<Field id='sourceVariable' type='menu'  visibleBindingId='sourceType'  visibleBindingValue='variable' alwaysUseInDialogHeightCalc='false'>
+    		<Field id='sourceVariable' type='menu'  visibleBindingId='sourceType'  visibleBindingValue='variable'>
     		    <Label>Variable:</Label>
 				<List class="indigo.variables" />
 			</Field>

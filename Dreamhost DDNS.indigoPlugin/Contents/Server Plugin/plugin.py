@@ -82,7 +82,9 @@ class Plugin(indigo.PluginBase):
         self.logger.debug("validateActionConfigUi: " + typeId)
         errorsDict = indigo.Dict()
         
-        if not is_valid_hostname(valuesDict.get('domain',"")):
+        if not valuesDict.get('domain',""):
+            errorsDict['domain'] = "Required"
+        elif not is_valid_hostname(valuesDict.get('domain')):
             errorsDict['domain'] = "Not a valid hostname"
         if valuesDict.get('sourceType') == "device":
             if not valuesDict.get('sourceDevice',""):
@@ -110,11 +112,14 @@ class Plugin(indigo.PluginBase):
             varId = int(action.props['sourceVariable'])
             ipAddress = indigo.variables[varId].value
         
-        if is_valid_ipv4_address(ipAddress):
-            rec_type = 'A'
-        elif is_valid_ipv6_address(ipAddress):
-            rec_type = 'AAAA'
-        else:
+        try: 
+            if is_valid_ipv4_address(ipAddress):
+                rec_type = 'A'
+            elif is_valid_ipv6_address(ipAddress):
+                rec_type = 'AAAA'
+            else:
+                raise
+        except:
             self.logger.error("'%s' is not a valid IP Address" % ipAddress)
             return
         
@@ -127,10 +132,12 @@ class Plugin(indigo.PluginBase):
             self.logger.info("DNS for '%s' is current" % domain)
         else:
             self.logger.info("DNS for '%s' not current" % domain)
+            # remove existing record, if any
             if current_dns_ip:
                 result, response = del_dns_record(domain, key, current_dns_ip, rec_type)
                 if not result: 
                     self.logger.error("del_dns_record: "+response)
+            # add new record
             result, response = add_dns_record(domain, key, ipAddress, rec_type)
             if result: 
                 self.logger.info("DNS for '%s' updated to '%s'" % (domain, ipAddress))
@@ -196,24 +203,16 @@ def get_dns_ip(records, rec_type='A'):
 def del_dns_record(domain, key, value, rec_type='A'):
     command = "dns-remove_record&record=" + domain + "&type=" + rec_type + "&value=" + value
     response = dreamhost_command(command, key)
-    if 'error' in response:
-        return False, response
-    else:
-        return True, response
+    return ('error' not in response), response
 
 def add_dns_record(domain, key, value, rec_type='A'):
     command = "dns-add_record&record=" + domain + "&type=" + rec_type + "&value=" + value
     response = dreamhost_command(command, key)
-    if 'error' in response:
-        return False, response
-    else:
-        return True, response
+    return ('error' not in response), response
 
 
 # http://stackoverflow.com/questions/2532053/validate-a-hostname-string
 def is_valid_hostname(hostname):
-    if not hostname: return False
-    if not isinstance(hostname, (str, unicode)): return False
     if hostname[-1] == ".":
         # strip exactly one dot from the right, if present
         hostname = hostname[:-1]
@@ -228,8 +227,6 @@ def is_valid_hostname(hostname):
 
 # http://stackoverflow.com/questions/319279/how-to-validate-ip-address-in-python
 def is_valid_ipv4_address(address):
-    if not address: return False
-    if not isinstance(address, (str, unicode)): return False
     try:
         socket.inet_pton(socket.AF_INET, address)
     except AttributeError:  # no inet_pton here, sorry
